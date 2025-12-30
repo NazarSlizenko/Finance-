@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Wallet, ArrowUpRight, ArrowDownRight, LayoutDashboard, History, Sparkles } from 'lucide-react';
 import { 
@@ -32,7 +31,7 @@ declare global {
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
     try {
-      const saved = localStorage.getItem('byn_finance_pro_v2');
+      const saved = localStorage.getItem('byn_finance_pro_v3');
       if (saved) return JSON.parse(saved);
     } catch (e) {
       console.error("Failed to load state", e);
@@ -50,38 +49,30 @@ const App: React.FC = () => {
   const [isAppReady, setIsAppReady] = useState(false);
 
   useEffect(() => {
-    // Инициализация Telegram с проверкой наличия объекта
-    const initTG = () => {
-      const tg = window.Telegram?.WebApp;
-      if (tg) {
-        try {
-          tg.ready();
-          tg.expand();
-          tg.headerColor = '#0f172a';
-          tg.backgroundColor = '#0f172a';
-          tg.enableClosingConfirmation();
-        } catch (e) {
-          console.warn("Telegram WebApp initialization error", e);
-        }
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      try {
+        tg.ready();
+        tg.expand();
+        tg.headerColor = '#0f172a';
+        tg.backgroundColor = '#0f172a';
+        if (tg.enableClosingConfirmation) tg.enableClosingConfirmation();
+      } catch (e) {
+        console.warn("Telegram initialization silent error", e);
       }
-      setIsAppReady(true);
-    };
-
-    // Ждем полной загрузки DOM и SDK
-    if (document.readyState === 'complete') {
-      initTG();
-    } else {
-      window.addEventListener('load', initTG);
-      return () => window.removeEventListener('load', initTG);
     }
+    // Принудительно устанавливаем готовность, чтобы не висеть на спиннере вечно
+    setIsAppReady(true);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('byn_finance_pro_v2', JSON.stringify(state));
+    localStorage.setItem('byn_finance_pro_v3', JSON.stringify(state));
   }, [state]);
 
   const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
-    window.Telegram?.WebApp?.HapticFeedback?.impactOccurred(style);
+    if (window.Telegram?.WebApp?.HapticFeedback) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred(style);
+    }
   };
 
   const stats = useMemo(() => {
@@ -119,9 +110,14 @@ const App: React.FC = () => {
   const handleFetchInsights = async () => {
     triggerHaptic('medium');
     setIsAiLoading(true);
-    const insight = await getFinancialInsights(state.transactions);
-    setAiInsight(insight);
-    setIsAiLoading(false);
+    try {
+      const insight = await getFinancialInsights(state.transactions);
+      setAiInsight(insight);
+    } catch (err) {
+      setAiInsight("Не удалось получить совет от ИИ.");
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   if (!isAppReady) {
