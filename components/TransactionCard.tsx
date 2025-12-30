@@ -17,11 +17,22 @@ const TransactionCard: React.FC<TransactionCardProps> = ({ transaction, onDelete
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.Telegram?.WebApp?.HapticFeedback) {
-      window.Telegram.WebApp.HapticFeedback.notificationOccurred('warning');
+    const tg = window.Telegram?.WebApp;
+    
+    if (tg?.HapticFeedback) {
+      tg.HapticFeedback.notificationOccurred('warning');
     }
-    if (onDelete && confirm('Удалить эту операцию?')) {
-      onDelete(transaction.id);
+
+    if (onDelete) {
+      if (tg?.showConfirm) {
+        tg.showConfirm('Удалить эту операцию?', (confirmed: boolean) => {
+          if (confirmed) onDelete(transaction.id);
+        });
+      } else {
+        if (confirm('Удалить эту операцию?')) {
+          onDelete(transaction.id);
+        }
+      }
     }
   };
 
@@ -65,6 +76,7 @@ const TransactionCard: React.FC<TransactionCardProps> = ({ transaction, onDelete
           <button 
             onClick={handleDelete}
             className="p-2 text-slate-600 hover:text-rose-400 transition-colors opacity-0 group-hover:opacity-100"
+            aria-label="Удалить"
           >
             <Trash2 size={16} />
           </button>

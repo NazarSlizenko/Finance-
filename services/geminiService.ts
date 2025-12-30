@@ -1,9 +1,16 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { Transaction } from "../types";
 
 export const getFinancialInsights = async (transactions: Transaction[]): Promise<string> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  // Безопасно получаем ключ, учитывая специфику Vite и браузера
+  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : '';
+  
+  if (!apiKey) {
+    return "API ключ не настроен. Пожалуйста, добавьте его в конфигурацию.";
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
   
   const summary = transactions.map(t => ({
     type: t.type,
@@ -13,12 +20,12 @@ export const getFinancialInsights = async (transactions: Transaction[]): Promise
   }));
 
   const prompt = `
-    Ты - персональный финансовый помощник. Проанализируй данные о доходах и расходах пользователя в белорусских рублях (BYN):
+    Ты - персональный финансовый помощник. Проанализируй данные о доходах и расходах в белорусских рублях (BYN):
     ${JSON.stringify(summary)}
 
-    Предоставь краткий и стильный отчет (не более 3-4 предложений). 
-    Отметь главные категории трат, дай совет по экономии или похвали за хороший баланс.
-    Используй эмодзи. Отвечай на русском языке.
+    Предоставь очень краткий отчет (3 предложения). 
+    Дай один конкретный совет по экономии на основе данных.
+    Используй эмодзи. Отвечай на русском.
   `;
 
   try {
@@ -26,14 +33,13 @@ export const getFinancialInsights = async (transactions: Transaction[]): Promise
       model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
-        temperature: 0.7,
-        thinkingConfig: { thinkingBudget: 0 }
+        temperature: 0.7
       }
     });
 
-    return response.text || "Не удалось получить рекомендации. Попробуйте добавить больше транзакций.";
+    return response.text || "Не удалось проанализировать данные.";
   } catch (error) {
     console.error("Gemini Error:", error);
-    return "Ой! Наши финансовые алгоритмы сейчас отдыхают. Попробуйте позже.";
+    return "Не удалось связаться с AI. Проверьте настройки ключа.";
   }
 };

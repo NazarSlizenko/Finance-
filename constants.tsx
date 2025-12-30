@@ -1,12 +1,12 @@
 
-import React from 'react';
 import { 
   ShoppingBag, Car, Home, Coffee, Utensils, Smartphone, Zap, 
-  Briefcase, TrendingUp, Gift, Tag, History, Sparkles, PlusCircle
+  Briefcase, TrendingUp, Gift, Tag, History, Sparkles, PlusCircle,
+  LucideIcon
 } from 'lucide-react';
 import { Transaction, TransactionType } from './types';
 
-export const ICON_MAP: Record<string, any> = {
+export const ICON_MAP: Record<string, LucideIcon> = {
   ShoppingBag, Car, Home, Coffee, Utensils, Smartphone, Zap, 
   Briefcase, TrendingUp, Gift, Tag, History, Sparkles, PlusCircle
 };
@@ -28,7 +28,6 @@ export const CATEGORIES = {
   ]
 };
 
-// Default transactions for a new user
 export const INITIAL_TRANSACTIONS: Transaction[] = [
   {
     id: '1',
