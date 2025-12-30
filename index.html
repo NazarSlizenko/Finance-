@@ -1,41 +1,32 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>BYN Finance Pro</title>
-  <!-- Telegram Web App Script -->
+  <title>BYN Finance Tracker</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Tailwind CDN для быстрой отрисовки -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --tg-theme-bg-color: #0f172a;
-    }
     body {
       font-family: 'Inter', sans-serif;
-      -webkit-tap-highlight-color: transparent;
-      background-color: #0f172a;
+      background-color: #020617;
       color: #f8fafc;
       margin: 0;
       padding: 0;
       min-height: 100vh;
-      /* Отступ для iOS Safe Area */
+      -webkit-font-smoothing: antialiased;
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
     }
-    #root {
-      min-height: 100vh;
-    }
-    .glass-effect {
-      background: rgba(30, 41, 59, 0.7);
+    .glass {
+      background: rgba(15, 23, 42, 0.7);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.08);
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
   </style>
@@ -54,7 +45,7 @@
 }
 </script>
 </head>
-<body class="bg-slate-950 text-slate-50">
+<body class="bg-slate-950">
   <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
