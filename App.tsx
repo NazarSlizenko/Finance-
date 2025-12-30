@@ -19,7 +19,6 @@ declare global {
         headerColor: string;
         backgroundColor: string;
         enableClosingConfirmation: () => void;
-        // Fix for missing property errors in TransactionCard: added showConfirm to global definition
         showConfirm: (message: string, callback?: (confirmed: boolean) => void) => void;
         HapticFeedback: {
           impactOccurred: (style: string) => void;
@@ -56,6 +55,7 @@ const App: React.FC = () => {
     if (tg) {
       tg.ready();
       tg.expand();
+      // Установка цветов темы ТГ
       tg.headerColor = '#0f172a';
       tg.backgroundColor = '#0f172a';
       try {
@@ -63,10 +63,10 @@ const App: React.FC = () => {
       } catch (e) {}
     }
     
-    // Даем небольшую паузу для отрисовки стилей и инициализации WebView
+    // Задержка гарантирует, что WebView успел вычислить размеры экрана
     const timer = setTimeout(() => {
       setIsAppReady(true);
-    }, 100);
+    }, 50);
     
     return () => clearTimeout(timer);
   }, []);
@@ -119,15 +119,20 @@ const App: React.FC = () => {
     setIsAiLoading(false);
   };
 
-  // Пока приложение не готово, показываем заглушку, чтобы не было видно пустого фона
+  // Важный момент: если WebView еще не готов, показываем загрузчик
   if (!isAppReady) {
-    return <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-      <div className="animate-pulse text-indigo-500 font-bold">BYN Tracker...</div>
-    </div>;
+    return (
+      <div className="flex-1 flex items-center justify-center bg-slate-950">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-medium animate-pulse">Загрузка...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-32 flex flex-col">
+    <div className="flex-1 flex flex-col bg-slate-950 pb-32">
       <header className="p-6 bg-gradient-to-b from-slate-900 to-slate-950 rounded-b-[40px] border-b border-white/5 shrink-0">
         <div className="flex justify-between items-center mb-10">
           <div className="flex items-center gap-3">
@@ -237,7 +242,7 @@ const App: React.FC = () => {
                   <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
                   <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce"></span>
                 </div>
-              ) : aiInsight || "Нажмите кнопку, чтобы получить персональный разбор ваших финансов на основе последних трат."}
+              ) : aiInsight || "Нажмите кнопку, чтобы получить персональный разбор ваших финансов."}
             </div>
             <button 
               onClick={handleFetchInsights} 
