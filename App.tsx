@@ -12,7 +12,7 @@ import { getFinancialInsights } from './services/geminiService';
 
 declare global {
   interface Window {
-    Telegram: {
+    Telegram?: {
       WebApp: {
         ready: () => void;
         expand: () => void;
@@ -50,26 +50,30 @@ const App: React.FC = () => {
   const [isAppReady, setIsAppReady] = useState(false);
 
   useEffect(() => {
-    // Инициализация Telegram
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      try {
-        tg.ready();
-        tg.expand();
-        tg.headerColor = '#0f172a';
-        tg.backgroundColor = '#0f172a';
-        tg.enableClosingConfirmation();
-      } catch (e) {
-        console.warn("Telegram WebApp initialization partial error", e);
+    // Инициализация Telegram с проверкой наличия объекта
+    const initTG = () => {
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        try {
+          tg.ready();
+          tg.expand();
+          tg.headerColor = '#0f172a';
+          tg.backgroundColor = '#0f172a';
+          tg.enableClosingConfirmation();
+        } catch (e) {
+          console.warn("Telegram WebApp initialization error", e);
+        }
       }
-    }
-    
-    // Небольшая задержка перед отрисовкой UI для стабильности WebView
-    const timer = setTimeout(() => {
       setIsAppReady(true);
-    }, 100);
-    
-    return () => clearTimeout(timer);
+    };
+
+    // Ждем полной загрузки DOM и SDK
+    if (document.readyState === 'complete') {
+      initTG();
+    } else {
+      window.addEventListener('load', initTG);
+      return () => window.removeEventListener('load', initTG);
+    }
   }, []);
 
   useEffect(() => {
@@ -121,7 +125,11 @@ const App: React.FC = () => {
   };
 
   if (!isAppReady) {
-    return <div className="min-h-screen bg-slate-950"></div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-950">
+        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
   }
 
   return (
