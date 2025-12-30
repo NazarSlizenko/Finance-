@@ -50,6 +50,7 @@ const App: React.FC = () => {
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
+    console.log("App component mounted");
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
@@ -58,8 +59,12 @@ const App: React.FC = () => {
       tg.backgroundColor = '#0f172a';
       tg.enableClosingConfirmation();
     }
-    // Небольшая задержка для корректного расчета размеров графиков
-    setTimeout(() => setIsLoaded(true), 100);
+    // Небольшая задержка для корректного расчета размеров графиков и отрисовки
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+      console.log("App ready state set to true");
+    }, 150);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -144,7 +149,13 @@ const App: React.FC = () => {
     }
   };
 
-  if (!isLoaded) return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-500 text-sm">Загрузка...</div>;
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-[#0f172a] flex items-center justify-center">
+        <div className="text-slate-500 animate-pulse text-sm font-medium">Загрузка BYN Tracker...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-32 relative bg-slate-950 overflow-x-hidden text-slate-50">
