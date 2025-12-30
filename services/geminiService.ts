@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { Transaction } from "../types";
 
@@ -6,12 +5,12 @@ import { Transaction } from "../types";
  * Generates financial advice based on recent transactions using Google GenAI SDK.
  */
 export const getFinancialInsights = async (transactions: Transaction[]): Promise<string> => {
-  // Try to get key from define or process.env
-  const apiKey = (process.env as any).API_KEY;
+  // Use the key injected by Vite during build
+  const apiKey = process.env.API_KEY;
   if (!apiKey) return "Настройте API_KEY для работы финансового помощника.";
 
-  // Initialize with mandatory named parameter
-  const ai = new GoogleGenAI({ apiKey });
+  // Initialize strictly using the environment variable
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   // Format transaction history for model analysis
   const history = transactions.slice(0, 15).map(t => ({
@@ -34,6 +33,7 @@ export const getFinancialInsights = async (transactions: Transaction[]): Promise
       }
     });
 
+    // Use .text property directly as per @google/genai guidelines
     return response.text || "Сегодня без советов, всё идет по плану! 🇧🇾";
   } catch (err) {
     console.error("Gemini Error:", err);
