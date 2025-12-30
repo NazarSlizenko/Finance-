@@ -6,7 +6,7 @@ import { Transaction } from "../types";
  * Generates financial advice based on recent transactions using Google GenAI SDK.
  */
 export const getFinancialInsights = async (transactions: Transaction[]): Promise<string> => {
-  // Use API_KEY exclusively from process.env (injected by Vite)
+  // Try to get key from define or process.env
   const apiKey = (process.env as any).API_KEY;
   if (!apiKey) return "Настройте API_KEY для работы финансового помощника.";
 
@@ -25,7 +25,6 @@ export const getFinancialInsights = async (transactions: Transaction[]): Promise
     Дай один меткий совет по экономии или похвалу за баланс. Не более 30 слов. Используй эмодзи.`;
 
   try {
-    // Using recommended model for Basic Text Tasks
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: prompt,

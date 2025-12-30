@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: './', // Гарантирует работу путей в Telegram и на GitHub Pages
+  base: './',
   server: {
     port: 3000,
     host: true
@@ -15,6 +15,14 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: false
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor': ['react', 'react-dom', 'recharts', 'lucide-react', '@google/genai'],
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
   }
 });
