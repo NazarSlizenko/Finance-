@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Wallet, ArrowUpRight, ArrowDownRight, LayoutDashboard, History, Sparkles } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie 
@@ -12,14 +12,33 @@ import { getFinancialInsights } from './services/geminiService';
 
 declare global {
   interface Window {
-    Telegram: { WebApp: any };
+    Telegram: {
+      WebApp: {
+        ready: () => void;
+        expand: () => void;
+        headerColor: string;
+        backgroundColor: string;
+        enableClosingConfirmation: () => void;
+        // Fix for missing property errors in TransactionCard: added showConfirm to global definition
+        showConfirm: (message: string, callback?: (confirmed: boolean) => void) => void;
+        HapticFeedback: {
+          impactOccurred: (style: string) => void;
+          notificationOccurred: (type: string) => void;
+        };
+      };
+    };
   }
 }
 
 const App: React.FC = () => {
   const [state, setState] = useState<AppState>(() => {
-    const saved = localStorage.getItem('byn_finance_pro_v1');
-    return saved ? JSON.parse(saved) : {
+    try {
+      const saved = localStorage.getItem('byn_finance_pro_v2');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      console.error("Failed to load state", e);
+    }
+    return {
       transactions: INITIAL_TRANSACTIONS,
       customCategories: { expense: [], income: [] },
       isAdding: false,
@@ -32,18 +51,28 @@ const App: React.FC = () => {
   const [isAppReady, setIsAppReady] = useState(false);
 
   useEffect(() => {
+    // Инициализация Telegram
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
       tg.expand();
       tg.headerColor = '#0f172a';
       tg.backgroundColor = '#0f172a';
+      try {
+        tg.enableClosingConfirmation();
+      } catch (e) {}
     }
-    setTimeout(() => setIsAppReady(true), 150);
+    
+    // Даем небольшую паузу для отрисовки стилей и инициализации WebView
+    const timer = setTimeout(() => {
+      setIsAppReady(true);
+    }, 100);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('byn_finance_pro_v1', JSON.stringify(state));
+    localStorage.setItem('byn_finance_pro_v2', JSON.stringify(state));
   }, [state]);
 
   const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
@@ -79,7 +108,7 @@ const App: React.FC = () => {
     return Object.entries(cats).map(([name, value]) => ({
       name, value, 
       color: [...CATEGORIES.EXPENSE, ...state.customCategories.expense].find(c => c.name === name)?.color || '#475569'
-    }));
+    })).sort((a, b) => b.value - a.value);
   }, [state.transactions, state.customCategories.expense]);
 
   const handleFetchInsights = async () => {
@@ -90,11 +119,16 @@ const App: React.FC = () => {
     setIsAiLoading(false);
   };
 
-  if (!isAppReady) return null;
+  // Пока приложение не готово, показываем заглушку, чтобы не было видно пустого фона
+  if (!isAppReady) {
+    return <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="animate-pulse text-indigo-500 font-bold">BYN Tracker...</div>
+    </div>;
+  }
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-32">
-      <header className="p-6 bg-gradient-to-b from-slate-900 to-slate-950 rounded-b-[40px] border-b border-white/5">
+    <div className="min-h-screen bg-slate-950 pb-32 flex flex-col">
+      <header className="p-6 bg-gradient-to-b from-slate-900 to-slate-950 rounded-b-[40px] border-b border-white/5 shrink-0">
         <div className="flex justify-between items-center mb-10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
@@ -104,7 +138,7 @@ const App: React.FC = () => {
           </div>
           <button 
             onClick={() => { triggerHaptic('medium'); setState(s => ({ ...s, isAdding: true })); }}
-            className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center active:scale-90 transition-transform"
+            className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center active:scale-90 transition-transform shadow-lg shadow-indigo-600/20"
           >
             <Plus className="text-white" size={24} />
           </button>
@@ -112,28 +146,28 @@ const App: React.FC = () => {
 
         <div className="text-center mb-10">
           <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mb-1">Общий баланс</p>
-          <h1 className="text-4xl font-black">{stats.balance.toLocaleString('ru-BY')} <span className="text-lg opacity-30 font-medium">Br</span></h1>
+          <h1 className="text-4xl font-black tabular-nums">{stats.balance.toLocaleString('ru-BY')} <span className="text-lg opacity-30 font-medium">Br</span></h1>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="glass p-3 rounded-2xl flex items-center gap-3">
             <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg"><ArrowUpRight size={16} /></div>
-            <div>
+            <div className="overflow-hidden">
               <p className="text-[9px] text-slate-500 uppercase font-bold">Доходы</p>
-              <p className="font-bold text-emerald-400">+{stats.income.toLocaleString()}</p>
+              <p className="font-bold text-emerald-400 truncate">+{stats.income.toLocaleString()}</p>
             </div>
           </div>
           <div className="glass p-3 rounded-2xl flex items-center gap-3">
             <div className="p-2 bg-rose-500/10 text-rose-400 rounded-lg"><ArrowDownRight size={16} /></div>
-            <div>
+            <div className="overflow-hidden">
               <p className="text-[9px] text-slate-500 uppercase font-bold">Расходы</p>
-              <p className="font-bold text-rose-400">-{stats.expense.toLocaleString()}</p>
+              <p className="font-bold text-rose-400 truncate">-{stats.expense.toLocaleString()}</p>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="p-6">
+      <main className="p-6 flex-1">
         {state.activeTab === 'dashboard' && (
           <div className="space-y-6">
             <div className="space-y-3">
@@ -159,7 +193,10 @@ const App: React.FC = () => {
                       <Pie data={pieData} cx="50%" cy="50%" innerRadius={50} outerRadius={70} dataKey="value" stroke="none">
                         {pieData.map((e, i) => <Cell key={i} fill={e.color} />)}
                       </Pie>
-                      <Tooltip contentStyle={{background: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '10px'}} />
+                      <Tooltip 
+                        contentStyle={{background: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '10px'}}
+                        itemStyle={{color: '#fff'}}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : <p className="text-slate-600 text-xs italic">Нет операций</p>}
@@ -169,30 +206,43 @@ const App: React.FC = () => {
         )}
 
         {state.activeTab === 'history' && (
-          <div className="space-y-2">
-            {state.transactions.map(t => (
-              <TransactionCard 
-                key={t.id} 
-                transaction={t} 
-                onDelete={(id) => setState(s => ({ ...s, transactions: s.transactions.filter(x => x.id !== id) }))}
-              />
-            ))}
+          <div className="space-y-2 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            {state.transactions.length > 0 ? (
+              state.transactions.map(t => (
+                <TransactionCard 
+                  key={t.id} 
+                  transaction={t} 
+                  onDelete={(id) => {
+                    triggerHaptic('light');
+                    setState(s => ({ ...s, transactions: s.transactions.filter(x => x.id !== id) }));
+                  }}
+                />
+              ))
+            ) : (
+              <div className="py-20 text-center text-slate-600 italic text-sm">История операций пуста</div>
+            )}
           </div>
         )}
 
         {state.activeTab === 'insights' && (
-          <div className="glass p-8 rounded-[40px] text-center space-y-6">
-            <div className="w-16 h-16 bg-indigo-600/10 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto">
+          <div className="glass p-8 rounded-[40px] text-center space-y-6 animate-in zoom-in-95 duration-300">
+            <div className="w-16 h-16 bg-indigo-600/10 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
               <Sparkles size={32} className={isAiLoading ? 'animate-pulse' : ''} />
             </div>
             <h3 className="text-xl font-bold">Ваш AI Аналитик</h3>
-            <p className="text-sm text-slate-400 min-h-[80px]">
-              {isAiLoading ? "Изучаю ваши чеки..." : aiInsight || "Нажмите кнопку, чтобы получить персональный разбор финансов."}
-            </p>
+            <div className="text-sm text-slate-400 min-h-[80px] flex items-center justify-center">
+              {isAiLoading ? (
+                <div className="flex gap-1">
+                  <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                  <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                  <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce"></span>
+                </div>
+              ) : aiInsight || "Нажмите кнопку, чтобы получить персональный разбор ваших финансов на основе последних трат."}
+            </div>
             <button 
               onClick={handleFetchInsights} 
               disabled={isAiLoading}
-              className="w-full bg-indigo-600 py-4 rounded-2xl font-bold active:scale-95 transition-all disabled:opacity-50"
+              className="w-full bg-indigo-600 py-4 rounded-2xl font-bold active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-indigo-600/20"
             >
               Сгенерировать совет
             </button>
@@ -201,15 +251,15 @@ const App: React.FC = () => {
       </main>
 
       <nav className="fixed bottom-6 left-6 right-6 h-20 glass rounded-[30px] flex items-center justify-around px-4 shadow-2xl z-50">
-        <button onClick={() => { triggerHaptic(); setState(s => ({ ...s, activeTab: 'dashboard' })) }} className={`flex flex-col items-center gap-1 ${state.activeTab === 'dashboard' ? 'text-indigo-400' : 'text-slate-600'}`}>
+        <button onClick={() => { triggerHaptic(); setState(s => ({ ...s, activeTab: 'dashboard' })) }} className={`flex flex-col items-center gap-1 transition-colors ${state.activeTab === 'dashboard' ? 'text-indigo-400' : 'text-slate-600'}`}>
           <LayoutDashboard size={20} />
           <span className="text-[9px] uppercase font-bold tracking-widest">Обзор</span>
         </button>
-        <button onClick={() => { triggerHaptic(); setState(s => ({ ...s, activeTab: 'history' })) }} className={`flex flex-col items-center gap-1 ${state.activeTab === 'history' ? 'text-indigo-400' : 'text-slate-600'}`}>
+        <button onClick={() => { triggerHaptic(); setState(s => ({ ...s, activeTab: 'history' })) }} className={`flex flex-col items-center gap-1 transition-colors ${state.activeTab === 'history' ? 'text-indigo-400' : 'text-slate-600'}`}>
           <History size={20} />
           <span className="text-[9px] uppercase font-bold tracking-widest">История</span>
         </button>
-        <button onClick={() => { triggerHaptic(); setState(s => ({ ...s, activeTab: 'insights' })) }} className={`flex flex-col items-center gap-1 ${state.activeTab === 'insights' ? 'text-indigo-400' : 'text-slate-600'}`}>
+        <button onClick={() => { triggerHaptic(); setState(s => ({ ...s, activeTab: 'insights' })) }} className={`flex flex-col items-center gap-1 transition-colors ${state.activeTab === 'insights' ? 'text-indigo-400' : 'text-slate-600'}`}>
           <Sparkles size={20} />
           <span className="text-[9px] uppercase font-bold tracking-widest">AI</span>
         </button>
@@ -217,8 +267,11 @@ const App: React.FC = () => {
 
       {state.isAdding && (
         <AddTransactionModal 
-          onClose={() => setState(s => ({ ...s, isAdding: false }))}
-          onAdd={(t) => setState(s => ({ ...s, transactions: [t, ...s.transactions], isAdding: false }))}
+          onClose={() => { triggerHaptic(); setState(s => ({ ...s, isAdding: false })); }}
+          onAdd={(t) => {
+            triggerHaptic('heavy');
+            setState(s => ({ ...s, transactions: [t, ...s.transactions], isAdding: false }));
+          }}
           customCategories={state.customCategories}
           onAddCategory={(type, cat) => setState(s => ({
             ...s,
