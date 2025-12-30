@@ -53,20 +53,21 @@ const App: React.FC = () => {
     // Инициализация Telegram
     const tg = window.Telegram?.WebApp;
     if (tg) {
-      tg.ready();
-      tg.expand();
-      // Установка цветов темы ТГ
-      tg.headerColor = '#0f172a';
-      tg.backgroundColor = '#0f172a';
       try {
+        tg.ready();
+        tg.expand();
+        tg.headerColor = '#0f172a';
+        tg.backgroundColor = '#0f172a';
         tg.enableClosingConfirmation();
-      } catch (e) {}
+      } catch (e) {
+        console.warn("Telegram WebApp initialization partial error", e);
+      }
     }
     
-    // Задержка гарантирует, что WebView успел вычислить размеры экрана
+    // Небольшая задержка перед отрисовкой UI для стабильности WebView
     const timer = setTimeout(() => {
       setIsAppReady(true);
-    }, 50);
+    }, 100);
     
     return () => clearTimeout(timer);
   }, []);
@@ -119,20 +120,12 @@ const App: React.FC = () => {
     setIsAiLoading(false);
   };
 
-  // Важный момент: если WebView еще не готов, показываем загрузчик
   if (!isAppReady) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-slate-950">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-slate-500 font-medium animate-pulse">Загрузка...</p>
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen bg-slate-950"></div>;
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-slate-950 pb-32">
+    <div className="flex-1 flex flex-col bg-slate-950 pb-32 min-h-screen animate-in fade-in duration-500">
       <header className="p-6 bg-gradient-to-b from-slate-900 to-slate-950 rounded-b-[40px] border-b border-white/5 shrink-0">
         <div className="flex justify-between items-center mb-10">
           <div className="flex items-center gap-3">
