@@ -6,12 +6,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
+    host: true, // Позволяет открывать через IP в локальной сети
     open: true
   },
   define: {
-    // Позволяет коду использовать process.env без падения приложения
-    'process.env': {
-      API_KEY: JSON.stringify(process.env.API_KEY || '')
-    }
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || '')
   }
 });

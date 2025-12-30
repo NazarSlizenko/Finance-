@@ -3,29 +3,28 @@ import { GoogleGenAI } from "@google/genai";
 import { Transaction } from "../types";
 
 export const getFinancialInsights = async (transactions: Transaction[]): Promise<string> => {
-  // Безопасно получаем ключ, учитывая специфику Vite и браузера
-  const apiKey = typeof process !== 'undefined' ? process.env.API_KEY : '';
+  // В Vite мы настроили подмену process.env.API_KEY через vite.config.ts
+  const apiKey = process.env.API_KEY;
   
   if (!apiKey) {
-    return "API ключ не настроен. Пожалуйста, добавьте его в конфигурацию.";
+    return "Ключ AI не найден. Проверьте настройки окружения.";
   }
 
   const ai = new GoogleGenAI({ apiKey });
   
-  const summary = transactions.map(t => ({
+  const summary = transactions.slice(0, 20).map(t => ({
     type: t.type,
     amount: t.amount,
     category: t.category,
-    date: t.date
+    date: t.date.split('T')[0] // Только дата для экономии токенов
   }));
 
   const prompt = `
-    Ты - персональный финансовый помощник. Проанализируй данные о доходах и расходах в белорусских рублях (BYN):
+    Ты - финансовый аналитик. Проанализируй данные в BYN (бел. рублях):
     ${JSON.stringify(summary)}
 
-    Предоставь очень краткий отчет (3 предложения). 
-    Дай один конкретный совет по экономии на основе данных.
-    Используй эмодзи. Отвечай на русском.
+    Напиши 2-3 коротких предложения с анализом и один совет. 
+    Используй эмодзи. Ответ на русском.
   `;
 
   try {
@@ -33,13 +32,14 @@ export const getFinancialInsights = async (transactions: Transaction[]): Promise
       model: "gemini-3-flash-preview",
       contents: prompt,
       config: {
-        temperature: 0.7
+        temperature: 0.7,
+        maxOutputTokens: 250
       }
     });
 
-    return response.text || "Не удалось проанализировать данные.";
+    return response.text || "Анализ временно недоступен.";
   } catch (error) {
     console.error("Gemini Error:", error);
-    return "Не удалось связаться с AI. Проверьте настройки ключа.";
+    return "Не удалось получить совет от AI.";
   }
 };
